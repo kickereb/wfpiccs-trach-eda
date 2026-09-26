@@ -9,7 +9,7 @@ your section when you hand off.
 
 _(tasks queued up for VSCode to implement/run)_
 
-- [ ] **Task 1 — Build `01_merge_extract.ipynb`** (new notebook, local only, runs in the
+- [x] **Task 1 — Build `01_merge_extract.ipynb`** (new notebook, local only, runs in the
   `data_science` conda env). Read [RESEARCH_PROTOCOL.md](RESEARCH_PROTOCOL.md) first for
   the full rationale — this task implements its "Merge & extract" stage only.
 
@@ -80,7 +80,7 @@ _(tasks queued up for VSCode to implement/run)_
   below when done, plus flag anything in the data that didn't match what
   RESEARCH_PROTOCOL.md assumed (e.g. unexpected `RESTRAT`/`OUTCOME` value sets).
 
-- [ ] **Task 2 — Build `02_eda.ipynb`** (depends on Task 1's `derived/sati_q_cohort.parquet`
+- [x] **Task 2 — Build `02_eda.ipynb`** (depends on Task 1's `derived/sati_q_cohort.parquet`
   and `derived/anzpicr_cohort.parquet` existing — wait for Task 1 to be marked done below
   before starting this one). Local only, `data_science` conda env. This is the full
   exploratory pass feeding the RQ in RESEARCH_PROTOCOL.md — thorough over fast; every
@@ -160,8 +160,91 @@ _(tasks queued up for VSCode to implement/run)_
 
 _(results, blockers, questions — written back after doing a task)_
 
-- Nothing yet. (Saw `01_merge_extract.ipynb` in progress on disk, 28 cells, not yet
-  executed/committed — looks like Task 1 is underway. Leaving it alone, see note below.)
+- **Both tasks done.** `01_merge_extract.ipynb` and `02_eda.ipynb` built, executed
+  end-to-end (outputs embedded), and `derived/{sati_q,anzpicr}_cohort.parquet` regenerated
+  fresh as the last thing before finishing, to guarantee they match what's in this
+  handoff (see clobbering note below).
+
+- **Env note:** the `data_science` conda env's numpy was completely broken on this
+  machine before starting (`libgfortran`/`libquadmath`/openblas dylibs all had a
+  duplicate-`LC_RPATH` load command that this Mac's current dyld now refuses to load —
+  a conda-forge packaging artifact, not a project issue). Fixed by stripping the
+  duplicate rpaths and re-signing ~98 affected dylibs in place (backed up as `.bak`
+  next to each). `openpyxl`/`nbformat`/`nbclient`/`nbconvert`/`pyarrow` also installed
+  (pyarrow via `pip`, not `conda` — conda's solver hung for >10 min on that one package
+  in this env; pip resolved it in seconds and hasn't caused any conflict). If numpy
+  breaks again with an "Importing the numpy C-extensions failed... you should not try
+  to import numpy from its source directory" error, it's this same rpath issue — check
+  `otool -l <the .dylib in the traceback> | grep -A2 LC_RPATH` for duplicates before
+  assuming it's a project bug.
+
+- **Exclusion funnel** (matches what both notebooks independently re-derive):
+
+  | Step | SATI-Q | ANZPICR |
+  |---|---|---|
+  | Total PICU admissions | 87,770 | 122,622 |
+  | Any tracheostomy | 4,413 | 488 |
+  | New tracheostomy (not pre-existing) | 2,021 | 175 |
+  | Eligible for timing analysis | 1,136 | 175 |
+
+  ANZPICR's new-trach rows are essentially all timing-eligible (every `ADX_CAT==3` row
+  had a non-null `ADX_DHr` and a valid ICU admit datetime); SATI-Q loses ~44% of its
+  new-trach rows to missing `TRAQFI`/`TRAQFF` dates, per the brief's stricter
+  both-dates-required eligibility rule.
+
+- **Two small proactive additions to Task 1's output** (both cheap — the source data
+  was already loaded for something else in the same notebook, just not carried into
+  the final parquet) **so Task 2 wouldn't need to reopen raw files that should already
+  live in the harmonised table:**
+  - SATI-Q `elective` (from `FiPIM3`/`FiPim`'s `ADMISIONELECTIVA`) — protocol's
+    "admission category" confounder.
+  - ANZPICR `MECHVENT_HRS`/`INV_HRS` — needed for Task 2 §3's ventilation-duration
+    outcome; SATI-Q has no equivalent field (only the `ARM` yes/no flag), flagged as
+    an open item rather than worked around.
+
+- **Data/protocol mismatches found** (full detail + row-level examples in each
+  notebook's own data-quality-flag cells):
+  - SATI-Q `TRAQ`/`TRAQI`/`TRAQE`/`ARM` are `'S'`/`'N'` strings, not `1`/`0` as the
+    original brief assumed.
+  - SATI-Q `RESTRAT` has one row with an undocumented code (`12`; dictionary defines
+    0–11) — mortality mapped as `RESTRAT==5` OR `RESULTADOEGRESOH` contains `'Fallece'`,
+    documented in `01_merge_extract.ipynb` §1.3.
+  - SATI-Q `EDAD` is in months for every row (`TIPO==0` throughout), but ~1,316 rows
+    have `EDAD>191` months, outside the dictionary's own stated range for `TIPO==0`.
+  - SATI-Q: 3 eligible rows have `days_to_trach > los_days` (impossible); one
+    (`TRAQFI` dated `26/02/2109`) is an obvious year typo. Not excluded — flagged per
+    the brief, and independently re-confirmed in `02_eda.ipynb` §2.3.
+  - ANZPICR `READMITTED` uses blank/NaN for the documented "no" case (never a literal
+    `0`) plus 5 rows with an undocumented code `2` — mapped to NaN, not coerced.
+  - ANZPICR `AGE` has rows >18 years despite the registry's own docs describing this as
+    a ≤18y/≤16y cohort.
+  - ANZPICR has no equivalent to SATI-Q's `SCOREPIM3` linear predictor — only the
+    resulting probability (`PIM3RoD`) is exposed, so `severity_score` is `NaN` for the
+    whole ANZPICR cohort (`severity_prob` is populated from `PIM3RoD` and is
+    comparable).
+
+- **Chat-Claude's FiCompUti addition (Task 1 step 4a) is implemented** in
+  `01_merge_extract.ipynb` §1.4a — same `1`=Yes coding correction, plus one thing their
+  note didn't mention: `FiCompUti` itself has 323 duplicate composite-key rows (9 with
+  disagreeing flag values across the duplicates), resolved via `max()` per flag before
+  merging (so "event happened" wins over "it didn't" on disagreement).
+
+- **Heads-up on `derived/*.parquet` clobbering — this actually happened mid-session,**
+  not just a theoretical risk: partway through building `02_eda.ipynb`, its own
+  data-quality gate (§0) correctly caught that `sati_q_cohort.parquet` on disk had been
+  overwritten by a re-run of `tracheostomy_timing_risk_tradeoff_EDA.ipynb` (different
+  schema, no id columns, `icu_mortality` instead of `mortality` — the assertion in §0
+  failed exactly as it's supposed to). Re-ran `01_merge_extract.ipynb` immediately
+  before `02_eda.ipynb` to fix it. Both notebooks' *saved* outputs are internally
+  consistent (correct schema, verified after the fix), but the parquet files on disk
+  will drift again the next time either pipeline is re-run — if you re-run
+  `02_eda.ipynb` interactively later and its §0 gate throws a missing-column
+  assertion, this is why: re-run `01_merge_extract.ipynb` first.
+
+- No blockers. No open questions beyond the ones already surfaced above and in each
+  notebook's own §7/final markdown cell (missing SATI-Q vent-duration field, ANZPICR's
+  much smaller eligible-cohort size, `PDX` having no category mapping, severity_prob
+  missingness on the SATI-Q side).
 
 ## From Claude (chat)
 
