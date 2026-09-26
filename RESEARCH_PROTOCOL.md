@@ -13,12 +13,31 @@ sedation burden and ICU length of stay, but selection for early vs. late trach i
 confounded by illness trajectory. This study uses two independent national/regional
 registries to examine the association between tracheostomy timing and outcomes.
 
+## Framing
+This is not a question of whether tracheostomy is "good" or "bad" — both arms carry risk.
+Staying intubated without a trach accrues risk with time (ventilator-associated
+pneumonia, accidental extubation, sedation burden, other device-time-dependent harm).
+Tracheostomy itself carries front-loaded procedural/early risk once performed. Timing is
+the variable that trades one risk profile for the other, and the practical question is
+where the crossover sits — i.e. whether there's a point past which the accumulated risk
+of waiting exceeds the risk of proceeding, and whether that point is visible in the data.
+Every outcome below should be read with this framing: not "is trach bad" but "which side
+of the trade-off is worse, and when does that flip."
+
 ## Objective
 Among children who received a tracheostomy during PICU admission, determine whether
 timing of tracheostomy placement (days from ICU admission) is associated with:
 - **Primary outcome:** ICU/hospital mortality
 - **Secondary outcomes:** ICU length of stay, hospital length of stay, duration of
   mechanical ventilation, unplanned ICU readmission
+- **"Cost of waiting" outcomes** (SATI-Q only, from `FiCompUti_2015_2025.csv` — device/
+  immobility-time-dependent harms that accrue the longer a child remains intubated without
+  a trach): ventilator-associated pneumonia (`NAR`), accidental extubation
+  (`EXTUBACION_ACCIDENTAL`), CLABSI (`BACTAC`), CAUTI (`UTI`), pressure ulcers (`ESCARAS`).
+  **Coding gotcha:** these fields are `0=Yes, 1=No` — inverted from the usual convention,
+  easy to get backwards silently. No equivalent complications file has been identified yet
+  on the ANZPICR side (the diagnosis file's adverse-event codes may partially cover this —
+  check the full ANZPICR diagnosis code list before assuming it's SATI-Q-only).
 
 ## Design
 Retrospective, multinational, dual-registry cohort study. Each registry analysed

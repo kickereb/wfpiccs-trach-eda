@@ -31,6 +31,13 @@ _(tasks queued up for VSCode to implement/run)_
      `mortality` (derive from `RESTRAT`/`RESULTADOEGRESOH` — inspect actual values first
      and document the mapping you use in the notebook, don't guess silently),
      `readmission`=`REINGRESO`.
+  4a. Left-join `FiCompUti_2015_2025.csv` on the same composite key for the "cost of
+     waiting" outcomes (see RESEARCH_PROTOCOL.md's Framing section): `vap`=`NAR`,
+     `accidental_extubation`=`EXTUBACION_ACCIDENTAL`, `clabsi`=`BACTAC`, `cauti`=`UTI`,
+     `pressure_ulcer`=`ESCARAS`. **These source fields are coded `0=Yes, 1=No` — invert
+     them when deriving the boolean columns so `True` means the event happened**, and say
+     so explicitly in a markdown cell (this is exactly the kind of silent-inversion bug
+     that's easy to ship).
   5. Build the **timing cohort**: rows where `TRAQ`=1 AND `TRAQI`=0 (new trach, not
      present on admission) AND `TRAQFI`/`TRAQFF` both non-null AND
      `(TRAQFI - FECHAING).days >= 0` (drop the known negative-duration data errors found
