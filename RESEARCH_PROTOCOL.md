@@ -34,8 +34,12 @@ timing of tracheostomy placement (days from ICU admission) is associated with:
   immobility-time-dependent harms that accrue the longer a child remains intubated without
   a trach): ventilator-associated pneumonia (`NAR`), accidental extubation
   (`EXTUBACION_ACCIDENTAL`), CLABSI (`BACTAC`), CAUTI (`UTI`), pressure ulcers (`ESCARAS`).
-  **Coding gotcha:** these fields are `0=Yes, 1=No` — inverted from the usual convention,
-  easy to get backwards silently. No equivalent complications file has been identified yet
+  **Coding gotcha (corrected):** the data dictionary claims `0=Yes, 1=No` for these
+  fields, but that is empirically wrong for this export — value `1` occurs in only
+  1-2.3% of admissions across all five fields, matching real-world incidence, whereas
+  treating `0` as "Yes" would mean ~98% of admissions had VAP. **Use standard coding:
+  `1`=Yes/event happened, `0`=No.** Verified against raw value counts before trusting this
+  over the dictionary text — don't re-invert. No equivalent complications file has been identified yet
   on the ANZPICR side (the diagnosis file's adverse-event codes may partially cover this —
   check the full ANZPICR diagnosis code list before assuming it's SATI-Q-only).
 

@@ -34,10 +34,14 @@ _(tasks queued up for VSCode to implement/run)_
   4a. Left-join `FiCompUti_2015_2025.csv` on the same composite key for the "cost of
      waiting" outcomes (see RESEARCH_PROTOCOL.md's Framing section): `vap`=`NAR`,
      `accidental_extubation`=`EXTUBACION_ACCIDENTAL`, `clabsi`=`BACTAC`, `cauti`=`UTI`,
-     `pressure_ulcer`=`ESCARAS`. **These source fields are coded `0=Yes, 1=No` — invert
-     them when deriving the boolean columns so `True` means the event happened**, and say
-     so explicitly in a markdown cell (this is exactly the kind of silent-inversion bug
-     that's easy to ship).
+     `pressure_ulcer`=`ESCARAS`. **Correction (found while chat-Claude built
+     `tracheostomy_timing_risk_tradeoff_EDA.ipynb` — see that notebook's §0):** the data
+     dictionary says these fields are `0=Yes, 1=No`, but that's wrong for this export —
+     checked empirically, value `1` occurs in only 1-2.3% of admissions across all five
+     fields (matching real incidence), so treating `0` as "Yes" would mean ~98% of
+     admissions had VAP. **Use standard coding: `1`=Yes/event happened, `0`=No — do not
+     invert.** Say so explicitly in a markdown cell either way, since it's exactly the
+     kind of bug that ships silently.
   5. Build the **timing cohort**: rows where `TRAQ`=1 AND `TRAQI`=0 (new trach, not
      present on admission) AND `TRAQFI`/`TRAQFF` both non-null AND
      `(TRAQFI - FECHAING).days >= 0` (drop the known negative-duration data errors found
@@ -156,7 +160,25 @@ _(tasks queued up for VSCode to implement/run)_
 
 _(results, blockers, questions — written back after doing a task)_
 
-- Nothing yet.
+- Nothing yet. (Saw `01_merge_extract.ipynb` in progress on disk, 28 cells, not yet
+  executed/committed — looks like Task 1 is underway. Leaving it alone, see note below.)
+
+## From Claude (chat)
+
+- Built and **ran** `tracheostomy_timing_risk_tradeoff_EDA.ipynb` directly (user asked for
+  it explicitly, bypassing the usual handoff for this one deliverable) — it's
+  self-contained: does its own SATI-Q + ANZPICR merge inline rather than depending on
+  Task 1's parquet output, so it doesn't conflict with `01_merge_extract.ipynb` being
+  built in VSCode. Both will write to `derived/*.parquet` when run, so whichever ran most
+  recently wins on disk — harmless since that folder is gitignored, but don't be surprised
+  if the parquet contents don't match what `01_merge_extract.ipynb` produces.
+- Found and fixed a real bug while building it: SATI-Q's `FiCompUti` complications file
+  (VAP/CLABSI/CAUTI/pressure-ulcer/accidental-extubation) is coded the *opposite* of what
+  the data dictionary claims. Task 1's step 4a and RESEARCH_PROTOCOL.md are now corrected
+  — if `01_merge_extract.ipynb` adds a complications join, use `1`=Yes, not `0`=Yes.
+- Also added an extra sanity check worth carrying into Task 1 if it doesn't have it
+  already: excluding rows where `days_to_trach` exceeds the recorded LOS (impossible) —
+  found 8 such rows in SATI-Q beyond the negative-duration ones already known.
 
 ## Notes
 
