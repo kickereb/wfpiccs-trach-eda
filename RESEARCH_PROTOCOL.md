@@ -39,9 +39,17 @@ timing of tracheostomy placement (days from ICU admission) is associated with:
   1-2.3% of admissions across all five fields, matching real-world incidence, whereas
   treating `0` as "Yes" would mean ~98% of admissions had VAP. **Use standard coding:
   `1`=Yes/event happened, `0`=No.** Verified against raw value counts before trusting this
-  over the dictionary text — don't re-invert. No equivalent complications file has been identified yet
-  on the ANZPICR side (the diagnosis file's adverse-event codes may partially cover this —
-  check the full ANZPICR diagnosis code list before assuming it's SATI-Q-only).
+  over the dictionary text — don't re-invert.
+
+  **ANZPICR VAP proxy — deciphered.** `ANZPICR_DIAG` has no dedicated VAP field, but
+  diagnosis code **`ADX`=465, "Pneumonia or Pneumonitis"**, filtered to **`ADX_CAT`=3**
+  (ICU occurrence — i.e. acquired during this admission, not present on/before arrival)
+  is a usable proxy: broader than VAP specifically (any ICU-acquired pneumonia, not only
+  ventilator-associated), but checked against the timing cohort — **34/175 (19.4%)** of
+  ANZPICR's new-trach admissions carry this code, remarkably close to SATI-Q's own VAP
+  rate in its equivalent cohort (18.2%, `vap`=`NAR`=1). Not yet wired into the analysis
+  notebook — worth adding as a second-registry "cost of waiting" signal, with the
+  proxy caveat stated plainly wherever it's used.
 
 ## Design
 Retrospective, multinational, dual-registry cohort study. Each registry analysed
