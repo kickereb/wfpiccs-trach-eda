@@ -1,0 +1,6 @@
+SATI-Q_WFPICCS_DATATHON_DATASET/
+ANZPICR_WFPICCS_DATATHON_DATASET/
+*.csv
+*.csv.gz
+.DS_Store
+.ipynb_checkpoints/
