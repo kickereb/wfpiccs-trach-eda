@@ -4,3 +4,4 @@ ANZPICR_WFPICCS_DATATHON_DATASET/
 *.csv.gz
 .DS_Store
 .ipynb_checkpoints/
+derived/
